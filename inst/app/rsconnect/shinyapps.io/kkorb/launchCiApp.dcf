@@ -1,0 +1,10 @@
+name: launchCiApp
+title:
+username: kkorb
+account: kkorb
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 15126790
+bundleId: 10680086
+url: https://kkorb.shinyapps.io/launchCiApp/
+version: 1

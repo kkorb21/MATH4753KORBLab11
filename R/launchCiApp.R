@@ -18,7 +18,7 @@
 #'
 #' @seealso \code{\link{ciNonSym}}
 #'
-#' @importFrom shiny shinyApp
+#' @importFrom shiny shinyAppDir
 #' @export
 #'
 #' @examples
@@ -29,8 +29,10 @@
 #' # Then launch the Shiny app
 #' launchCiApp()
 #' }
-utils::globalVariables(c("ui", "server"))
+utils::globalVariables(c("ui", "server", "data"))
 
 launchCiApp <- function() {
-  shinyApp(ui = ui, server = server)
+  app_dir <- system.file("app", package = "Math4753KORBLab11")
+  shinyAppDir(appDir = app_dir)
 }
+

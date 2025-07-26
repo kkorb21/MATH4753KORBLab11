@@ -134,6 +134,7 @@ sliders that input the other options.
 ![](images/LAB11.jpeg)
 
 Below is a link to our live app:
+https://kkorb.shinyapps.io/launchCiApp/
 
 # Task 3
 

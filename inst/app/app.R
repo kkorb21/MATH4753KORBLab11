@@ -12,6 +12,8 @@ library(shiny)
 library(ggplot2)
 library(dplyr)
 
+ddt <- read.csv("DDT.csv")
+
 # UI
 ui <- fluidPage(
   titlePanel("Korb Lab 11: Non-Symmetric Confidence Interval Viewer"),
