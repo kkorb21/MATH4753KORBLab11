@@ -1,0 +1,201 @@
+---
+title: "Lab11_Vignette"
+author: "Kelsey Korb"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Lab11_Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(Math4753KORBLab11)
+library(dplyr)
+```
+
+
+# Nature of Package
+
+This package provides tools for computing and visualizing credible intervals in asymmetric distributions, with a focus on Highest Density Intervals (HDIs) and flexible root-finding for custom interval diagnostics. It supports both programmatic workflows and interactive exploration via a Shiny interface.
+
+Key functions include:
+- *ciNonSym()* Computes non-symmetric confidence intervals using custom quantile logic. Supports distributions with skewed probability mass and outputs intuitive diagnostics for statistical reporting.
+- *launchCiApp()* Launches a Shiny app for interactive manipulation of interval settings, allowing users to explore the behavior of HDIs versus ETIs across different distributional shapes and tail probabilities.
+- *dendiff()* Evaluates the difference in density between two quantiles of a Beta distribution given a tail exclusion level. Includes graphical output to aid in identifying HDI boundaries through visual root-finding.
+- *hdicalc()* Calculates both HDI and Equal Tail Intervals (ETI) for a variety of continuous distributions using user-defined parameter inputs. Returns structured interval data and tail exclusion diagnostics.
+
+# Task 1
+
+## Finding Confidence Interval
+
+When conducting hypothesis tests about population parameters—such as the mean length of SMBUFFALO fish, denoted $\mu_L$—the null hypothesis is often treated as strictly false:
+
+$$
+H_0: \mu_L = \mu_0
+$$
+
+However, since fish length is a continuous random variable, any fixed value $\mu_0$ represents just one point on an infinite continuum. Thus, rejecting $H_0$ is conceptually closer to rejecting a neighborhood or ball around $\mu_0$, rather than a single isolated value.
+
+We seek to construct a $100(1 - \alpha)\%$ confidence interval for the population mean $\mu$, based on a sample of size $n$ with sample mean $\overline{Y}$ and sample standard deviation $s$. Instead of splitting the total error probability $\alpha$ equally between both tails, we allow:
+
+$$
+\alpha = \alpha_1 + \alpha_2
+$$
+
+where:
+$\alpha_1$ is the area in the lower tail
+$\alpha_2$ is the area in the upper tail
+
+We assume the sample comes from a normal distribution, or $n$ is large enough for the Central Limit Theorem to apply. Then:
+
+Under this scheme, a $100(1-\alpha)\%$ confidence interval takes the form:
+
+$$
+T = \frac{Y - \mu}{s \div \sqrt{n}} \approx t_n - 1
+$$
+
+We want to find bounds $L$ and $U$ such that:
+
+$$
+P(L \leq \mu \leq U) = 1 - \alpha
+$$
+
+But because the interval is non-symmetric, these bounds correspond to two different critical $t$ values:
+- $t_{\alpha_2}$ covers the right tail such that $P(T > t_{\alpha_2}) = \alpha_2$
+- $t_{\alpha_1}$ covers the left tail such that $P(T < -t_{\alpha_1}) = \alpha_1$
+This gives:
+
+$$
+P(t_{\alpha_1} \leq T \leq t_{\alpha_2}) = 1 - \alpha
+$$
+
+Solving this inequality for $\mu$:
+
+$$
+t_{\alpha_1} \leq \frac{Y - \mu}{s \div \sqrt{n}} \leq t_{\alpha_2}
+$$
+
+Multiplying through by $\frac{s}{\sqrt{n}}$:
+
+$$
+t_{\alpha_1} \times \frac{s}{\sqrt{n}} \leq Y - \mu \leq t_{\alpha_2} \times \frac{s}{\sqrt{n}}
+$$
+
+Rearranging for $\mu$:
+
+$$
+Y - t_{\alpha_1} \times \frac{s}{\sqrt{n}} \leq \mu \leq Y + t_{\alpha_2} \times \frac{s}{\sqrt{n}}
+$$
+
+We have found our final confidence interval calculation to be,
+
+$$
+Y - t_{\alpha_2} \times \frac{s}{\sqrt{n}}, Y + t_{\alpha_2} \times \frac{s}{\sqrt{n}}
+$$
+
+## Function *ciNonSym*
+
+We have used the function we found above and applied it to our DDT data. We know Length is continuous, we will test if the ball is within the confidence interval.
+
+```{r ciNonSym, fig.width = 7, fig.height = 5}
+df <- ddt %>% filter(SPECIES == "CCATFISH")
+
+ciNonSym(x = df$LENGTH, 
+         alpha = 0.05,
+         alpha2 = 0.02, 
+         mu0 = 45, 
+         epsilon = 4,
+         bins = 25)
+```
+
+We have shown that for this example, test = FALSE. This means that the ball around the hypothesized mean $\mu_0$—that is, the interval $[\mu_0 - \varepsilon,\; \mu_0 + \varepsilon]$—does not lie entirely within the non-symmetric confidence interval. Thus, we do not have enough evidence to reject the null hypothesis.
+
+# Task 2
+
+We have constucted an app that meets the following requirements:
+- Drop down options to work on some quantitative vector of the \(DDT\) data set for a given category
+sliders that input the other options.
+- the list output is printed to a table.
+- the ggplot should appear as it does in *ciNonSym*.
+- the plot is clickable so that the x coordinate updates the value of $\mu_0$.
+
+
+![](images/LAB11.jpeg)
+
+Below is a link to our live app:
+
+# Task 3
+
+## Density Difference for HDIs
+
+The *dendiff()* function is used to identify Highest Density Intervals (HDIs) for asymmetric distributions like the Beta. It evaluates the difference in density between two quantiles—those that exclude left-tail probability $\alpha_1$ and right-tail probability $\alpha_2 = \alpha - \alpha_1$—and is used in root-finding algorithms to determine the precise HDI cutoff points.
+
+By computing: 
+$$ 
+\text{density difference} = f\left(Q_{\alpha_1}\right) - f\left(Q_{1 - \alpha_2}\right) 
+$$ 
+*dendiff()* tells us how balanced the densities are at opposite ends of a proposed interval. When this difference equals zero, the interval spans the highest density region—which, by definition, excludes all points with lower density than the endpoints.
+
+We will demonstarte our use of *dendiff()* with the following parameters:
+- $\alpha_1 = 0.02$
+- $\text{mean} = 3$
+- $\text{standard deviation} = 10$
+- $\alpha = 0.05$
+
+```{r dendiff, fig.width = 7, fig.height = 5}
+dendiff(a1 = 0.02, shape1 = 3, shape2 = 10, alpha = 0.05)
+```
+
+We can see that both with our visualisation of the relationship and our output of **0.5874787** that the density at the lower tail quantile (left endpoint) is much higher than the density at the upper tail quantile (right endpoint). We have shown that our distribution is asymetric.
+
+## HID Calculation
+
+*hdicalc()* provides a streamlined solution for calculating the Highest Density Interval (HDI) and Equal Tail Interval (ETI) for any distribution supported by R’s base quantile and density functions. By dynamically constructing function calls based on the user-specified distribution prefix (e.g., "norm", "beta") and its parameters, it locates the HDI through density matching using a root-finding algorithm and compares it with the traditional equal-tail approach. The resulting output—complete with interval bounds, widths, and tail probabilities—is especially useful for highlighting how HDIs concentrate around areas of peak density, offering tighter and more representative intervals in asymmetric distributions like Beta or Gamma. This function is well-suited for both teaching and applied inference tasks in Bayesian workflows, simulation summaries, or interval diagnostics.
+
+### Explination of function
+
+Our function starts by requiring the following inputs:
+- A distribution prefix (e.g. "beta", "norm") as stem.
+- A list of arguments to pass to the distribution functions as args.
+- A definition for the significance level alpha (commonly 0.05 for 95% intervals).
+
+Our function contains an inner help function *dendiff()*. The nested function is used for the following:
+- Compute density difference between two quantiles (if nr = TRUE)
+- Or return the two quantiles (if nr = FALSE).
+
+We will then calculate the upper tail probability (α₂) as the remainder from α₁. Dynamically build the names of R’s base density and quantile functions, like "dbeta" or "qnorm". Evaluate the lower ($\alpha_1$) and upper $(1 – \alpha_2)$ quantiles of the distribution using the provided parameters.If nr = TRUE: our function returns the density difference at the two quantiles—used in root-finding to balance densities.
+If nr = FALSE: our function returns the quantile pair (the actual interval endpoints).
+
+Now we need to find the roots. We do this by finding the value of $\alpha_1$ that makes the density difference zero—i.e., where both endpoints of the HDI have equal density.
+
+Lastly we will compute the interval bounds. We will get the HDI bounds by evaluating the quantiles at the root $\alpha_1$. Then get ETI bounds by trimming $\alpha \div 2$ from both tails equally.
+
+We will show the differences between *hdicalc* and *dendiff* by calling *hdicalc()* with the same parameters we just did for *dendiff*
+
+```{r}
+hdicalc(stem = "beta", args = list(shape1 = 3, shape2 = 10), alpha = 0.05)
+```
+
+### HDI Interpretation
+
+- **HDI Bounds**: [0.0359, 0.4502] This is the interval where the probability density is highest—every point inside has higher density than those outside.
+- **Tail Probabilities**:
+alpha1 = 0.008: Very little probability trimmed from the left tail
+alpha2 = 0.042: Majority of trimming happens on the right tail
+That imbalance reflects the Beta(3,10)’s right-skew—more of the "low-density waste" is on the right.
+- **Width (RHDI = 0.4143)**: The HDI covers ~41% of the range, offering a tighter and more representative interval than a simple ETI.
+
+### ETI Comparison
+- **ETI Bounds**: [0.0549, 0.4841] Trims 2.5% from each tail equally, regardless of density.
+- **Width (RETI = 0.4293)**: Slightly wider than the HDI, and includes lower-density regions in exchange for symmetrical probability coverage.

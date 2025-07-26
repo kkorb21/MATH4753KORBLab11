@@ -1,0 +1,29 @@
+Package: Math4753KORBLab11
+Type: Package
+Title: Hypothesis Testing Part 1
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Kelsey", "Korb",
+      email = "kelsey.e.korb-1@ou.edu",
+      role = c("aut", "cre")
+    )
+  )
+Description: Packaged functions and app to allow a user to perform various hypothesis tests.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
+Imports:
+  dplyr,
+  ggplot2,
+  stats,
+  shiny,
+  glue,
+  graphics
+Depends: 
+    R (>= 3.5)
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
